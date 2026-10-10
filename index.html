@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Turbulent Displace Studio — dựng video + hiệu ứng ADBE Turbulent Displace</title>
+<style>
+:root{--bg:#1b1b1d;--panel:#262628;--panel2:#2e2e31;--line:#3a3a3e;--ink:#d8d8da;--dim:#8d8d93;--blue:#4ea1ff;--amber:#e8b25a;--ok:#74c69d}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 "Segoe UI",system-ui,-apple-system,Roboto,sans-serif}
+header{padding:18px 20px 10px;max-width:1500px;margin:auto}
+h1{font-size:22px;margin:0 0 4px;font-weight:600;letter-spacing:-.01em}
+header p{margin:0;color:var(--dim);max-width:78ch}
+main{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(320px,1fr);gap:14px;padding:10px 20px 30px;max-width:1500px;margin:auto}
+@media(max-width:900px){main{grid-template-columns:1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px}
+.stage{padding:10px;position:sticky;top:10px;align-self:start}
+@media(max-width:900px){.stage{position:static}}
+.view{position:relative;aspect-ratio:16/9;border-radius:3px;overflow:hidden;background:repeating-conic-gradient(#3a3a3e 0 25%,#2c2c2f 0 50%) 0 0/16px 16px}
+canvas{display:block;width:100%;height:100%}
+.bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+button,select,input[type=file]::file-selector-button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:6px 11px;font:inherit;cursor:pointer}
+button:hover{border-color:var(--blue)}button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--blue);outline-offset:1px}
+button.on{background:var(--blue);color:#06101c;border-color:var(--blue)}
+.tl{margin-top:10px;background:#1f1f21;border:1px solid var(--line);border-radius:3px;position:relative}
+#tl{width:100%;height:110px;cursor:ew-resize}
+.legend{display:flex;gap:14px;color:var(--dim);font-size:12px;margin-top:6px}
+.sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+.fx{padding:0}
+.tabs{display:flex;border-bottom:1px solid var(--line)}
+.tabs button{flex:1;border:0;border-radius:6px 6px 0 0;background:none;padding:10px 8px;color:var(--dim)}
+.tabs button.on{background:var(--panel2);color:var(--ink);box-shadow:inset 0 -2px var(--blue)}
+.note{padding:10px 12px;color:var(--dim);font-size:12px;border-bottom:1px solid var(--line)}
+.pass{border-bottom:1px solid var(--line)}
+.ph{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--panel2);font-weight:600}
+.ph .fxi{color:var(--ok);font-style:italic;font-family:serif}
+.row{display:grid;grid-template-columns:150px 1fr;gap:8px;align-items:center;padding:4px 12px;min-height:30px}
+.row.grp{color:var(--dim);padding-top:8px}
+.row label{color:#c2c2c6}
+.val{display:flex;align-items:center;gap:8px}
+.val input[type=range]{flex:1;min-width:60px;accent-color:var(--blue)}
+.num{width:76px;background:#1b1b1d;border:1px solid var(--line);border-radius:3px;color:var(--blue);padding:3px 6px;text-align:right;font:inherit}
+.num.kf{color:var(--amber);border-color:#5a4a28}
+.badge{font-size:11px;color:var(--amber);white-space:nowrap}
+.src{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px}
+.foot{padding:12px;color:var(--dim);font-size:12px}
+.foot b{color:var(--ink)}
+#err{display:none;padding:30px;text-align:center;color:#ff9b9b}
+
+main{grid-template-columns:minmax(0,1.5fr) minmax(330px,1fr)}
+.tlcard{grid-column:1/-1;padding:10px}
+.stage{position:static}
+.tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+.tools input[type=number]{width:62px}
+.sep{width:1px;height:22px;background:var(--line)}
+.ruler{position:relative;height:22px;margin-left:96px;border-bottom:1px solid var(--line);cursor:ew-resize;scrollbar-gutter:stable;margin-right:0}
+.ruler i{position:absolute;top:0;bottom:0;border-left:1px solid #444;padding-left:4px;font:11px/22px system-ui;color:var(--dim);font-style:normal;pointer-events:none}
+.scroll{max-height:250px;overflow-y:auto;scrollbar-gutter:stable}
+.rin{position:relative;min-height:40px}
+.trow{display:grid;grid-template-columns:96px 1fr;height:34px;border-bottom:1px solid #2f2f32}
+.lbl{padding:8px 6px;color:var(--dim);font-size:12px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.lane{position:relative;background:#202022}
+.blk{position:absolute;top:3px;bottom:3px;border-radius:3px;padding:5px 8px;font-size:12px;overflow:hidden;white-space:nowrap;cursor:grab;user-select:none;touch-action:none;border:1px solid transparent}
+.blk.c{background:#2f5d8c;color:#e7f1ff}.blk.f{background:#6b4d1d;color:#ffe9c2}
+.blk.sel{border-color:#fff;box-shadow:0 0 0 1px #000}
+.blk:before,.blk:after{content:"";position:absolute;top:0;bottom:0;width:7px;cursor:ew-resize}.blk:before{left:0}.blk:after{right:0}
+.phl{position:absolute;top:0;bottom:0;width:2px;background:#ff5d5d;pointer-events:none;z-index:3}
+.empty{padding:14px;color:var(--dim)}
+.sw2{background:none;border:1px solid var(--line);padding:1px 6px;color:var(--dim);font-size:12px}
+.sw2.on{color:var(--amber);border-color:var(--amber)}
+.ph .sp{flex:1}.ph button{padding:2px 8px}
+.fld{display:grid;grid-template-columns:110px 1fr;gap:8px;align-items:center;padding:4px 12px}
+.fld input[type=text]{background:#1b1b1d;border:1px solid var(--line);border-radius:3px;color:var(--ink);padding:4px 6px;font:inherit}
+.fld input[type=number]{width:90px;background:#1b1b1d;border:1px solid var(--line);border-radius:3px;color:var(--blue);padding:3px 6px;font:inherit;text-align:right}
+.acts{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-bottom:1px solid var(--line)}
+.kbd{color:var(--dim);font-size:11px;padding:4px 12px 10px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Turbulent Displace Studio <span style="color:var(--blue)">· từ 乙类自动保存_20.aep</span></h1>
+  <p>Thêm nhiều video/ảnh, đặt lớp hiệu ứng <b>ADBE Turbulent Displace</b> ở đâu tuỳ thích, nhân bản bao nhiêu bản cũng được, chỉnh từng tham số và keyframe. Mỗi lớp hiệu ứng hoạt động như một Adjustment Layer.</p>
+</header>
+<main>
+  <section class="card stage">
+    <div class="view" id="view"><canvas id="gl" width="1280" height="720"></canvas><div id="err">Trình duyệt không hỗ trợ WebGL2.</div></div>
+    <div class="bar">
+      <button id="play" class="on">❚❚ Tạm dừng</button><button id="loop" class="on">Lặp</button>
+      <span id="tinfo" style="color:var(--dim)"></span><span style="flex:1"></span>
+      <label style="color:var(--dim)">Độ dài dự án <input type="number" id="dur" class="num" min="1" max="600" step="0.5" style="width:60px"> s</label>
+      <button id="rec">● Xuất WebM</button>
+    </div>
+  </section>
+  <section class="card fx"><div id="insp"></div></section>
+  <section class="card tlcard">
+    <div class="tools">
+      <button id="addMedia">＋ Video / Ảnh</button><input type="file" id="file" accept="image/*,video/*" multiple hidden>
+      <select id="addFx" aria-label="Thêm lớp hiệu ứng"><option value="">＋ Lớp hiệu ứng…</option></select>
+      <span class="sep"></span>
+      <button id="bDup">Nhân bản</button><label style="color:var(--dim)">×<input type="number" id="dupN" class="num" value="1" min="1" max="50" style="width:52px"></label>
+      <button id="bSplit">Cắt tại đầu phát</button><button id="bDel">Xoá</button>
+    </div>
+    <div class="ruler" id="ruler"></div>
+    <div class="scroll"><div class="rin" id="rows"></div></div>
+    <div class="kbd">Kéo thân khối để di chuyển · kéo mép trái/phải để đổi độ dài · bấm vào thước thời gian để tua · Space phát/dừng · D nhân bản · S cắt · Delete xoá</div>
+  </section>
+</main>
+<script>
+"use strict";
+const FPS=30, REF=[1920,1080];
+const TYPES=['Turbulent','Bulge','Twist','Turbulent Smoother','Bulge Smoother','Horizontal Displacement','Vertical Displacement','Cross Displacement'];
+const PINS=['None','Pin All','Pin Horizontally','Pin Vertically','Pin Left','Pin Right','Pin Top','Pin Bottom'];
+const TD=(p,kf,expr)=>({kind:'td',name:'Turbulent Displace',p:Object.assign({type:0,amount:50,size:100,offx:960,offy:540,cx:1,evo:0,cycleOn:0,cyc:1,seed:0,pin:0,resize:0,aa:0},p),kf:kf||{},expr:expr||{}});
+const TILE=p=>({kind:'tile',name:'Motion Tile',p:Object.assign({outW:240,outH:330,mirror:1},p),kf:{},expr:{}});
+/* Keyframe: [khung, giá trị, inSpeed, inInfluence, outSpeed, outInfluence] — đọc từ ldat trong .aep */
+const PRESETS=[
+ {name:'Burst · 预合成 11',dur:.8,passes:()=>[TD({},{amount:[[0,0,0,.16667,-4.9089e-5,.59755],[9,668,-8.121e-5,.001,0,.001],[19,0,-15.221,.6518,0,.16667]],
+   size:[[0,2,0,.16667,-4.9089e-5,.59755],[9,10,-8.121e-5,.001,0,.001],[19,2,-.18228,.6518,0,.16667]]})]},
+ {name:'Tile + 2× Turbulent · time*300',dur:2.4,passes:()=>[TILE(),
+   TD({},{amount:[[0,130,0,.33333,-5215.2,.015],[29,0,0,.33333,0,.16667]],size:[[0,20,0,.33333,5638.3,.0088235],[34,250,0,.33333,0,.33333]]}),
+   TD({amount:6.666666,offx:540,offy:540},{},{evo:t=>t*300})]},
+ {name:'Turbulent Displace trống',dur:1.5,passes:()=>[TD({})]}
+];
+const SCHEMA=[['type','Displacement','sel',TYPES],['amount','Amount','num',0,1000,.1],['size','Size','num',.5,1000,.1],['offx','Offset (Turbulence) X','num',-1000,3000,1],['offy','Offset (Turbulence) Y','num',-1000,2000,1],
+ ['cx','Complexity','num',1,10,.1],['evo','Evolution','num',-3600,3600,1,'°'],['_g','Evolution Options','grp'],['cycleOn','Cycle Evolution','chk'],['cyc','Cycle (in Revolutions)','num',1,10,1],['seed','Random Seed','num',0,100,1],
+ ['pin','Pinning','sel',PINS],['resize','Resize Layer','chk'],['aa','Antialiasing for Best Quality','sel',['Low','High']]];
+const TILES=[['outW','Output Width','num',10,1000,1,'%'],['outH','Output Height','num',10,1000,1,'%'],['mirror','Mirror Edges','chk']];
+
+/* ---------- bezier thời gian của After Effects ---------- */
+function ease(k,t){
+  const T=t*FPS; if(T<=k[0][0])return k[0][1]; const L=k[k.length-1]; if(T>=L[0])return L[1];
+  let i=0; while(T>k[i+1][0])i++;
+  const a=k[i],b=k[i+1],dt=(b[0]-a[0])/FPS, x=(T-a[0])/FPS;
+  const X=[0,a[5]*dt,dt-b[3]*dt,dt], Y=[a[1],a[1]+a[4]*a[5]*dt,b[1]-b[2]*b[3]*dt,b[1]];
+  const B=(P,u)=>{const v=1-u;return v*v*v*P[0]+3*v*v*u*P[1]+3*v*u*u*P[2]+u*u*u*P[3]};
+  let lo=0,hi=1; for(let n=0;n<40;n++){const m=(lo+hi)/2; B(X,m)<x?lo=m:hi=m;}
+  return B(Y,(lo+hi)/2);
+}
+const valueOf=(ps,key,t)=>ps.kf[key]?ease(ps.kf[key],t):ps.expr[key]?ps.expr[key](t):ps.p[key];
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x)), fr=x=>Math.round(x*FPS)/FPS, $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ---------- WebGL2 ---------- */
+const cv=document.getElementById('gl'), gl=cv.getContext('webgl2',{premultipliedAlpha:true,preserveDrawingBuffer:true,alpha:true});
+if(!gl){document.getElementById('err').style.display='block';throw new Error('WebGL2 required');}
+const VS=`#version 300 es
+out vec2 vUv;void main(){vec2 p=vec2((gl_VertexID<<1)&2,gl_VertexID&2);vUv=p;gl_Position=vec4(p*2.-1.,0.,1.);}`;
+const FS=`#version 300 es
+precision highp float;in vec2 vUv;out vec4 o;
+uniform sampler2D uTex;uniform vec2 uRef;
+uniform int uType,uPin,uAA,uCycleOn,uResize,uMirror;
+uniform float uAmt,uSize,uCx,uEvo,uCyc,uSeed,uOutW,uOutH;uniform vec2 uOff;
+float h(vec3 p){p=fract(p*.3183099+.1);p*=17.;return fract(p.x*p.y*p.z*(p.x+p.y+p.z));}
+float vn(vec3 x){vec3 i=floor(x),f=fract(x);f=f*f*f*(f*(f*6.-15.)+10.);
+ return mix(mix(mix(h(i),h(i+vec3(1,0,0)),f.x),mix(h(i+vec3(0,1,0)),h(i+vec3(1,1,0)),f.x),f.y),
+            mix(mix(h(i+vec3(0,0,1)),h(i+vec3(1,0,1)),f.x),mix(h(i+vec3(0,1,1)),h(i+vec3(1,1,1)),f.x),f.y),f.z)*2.-1.;}
+float fbm(vec3 p,float gain){float s=0.,a=1.,n=0.;
+ for(int i=0;i<10;i++){float w=clamp(uCx-float(i),0.,1.);s+=w*a*vn(p);n+=w*a;a*=gain;
+  p=vec3(mat2(.8,.6,-.6,.8)*p.xy*2.02,p.z*1.7)+vec3(5.2,1.3,3.1);}
+ return clamp(1.6*s/max(n,1e-3),-1.,1.);}
+vec2 field(vec2 q,float g){
+ if(uCycleOn==1){float a=radians(uEvo)/uCyc,c=cos(a),s=sin(a);
+  return vec2(c*fbm(vec3(q,0.),g)+s*fbm(vec3(q,40.),g),c*fbm(vec3(q+19.7,0.),g)+s*fbm(vec3(q+19.7,40.),g));}
+ float z=uEvo/360.*2.;return vec2(fbm(vec3(q,z),g),fbm(vec3(q+19.7,z+7.3),g));}
+float pinf(vec2 uv){vec2 e=min(uv,1.-uv);float px=smoothstep(0.,.06,e.x),py=smoothstep(0.,.06,e.y);
+ if(uPin==1)return px*py;if(uPin==2)return px;if(uPin==3)return py;
+ if(uPin==4)return smoothstep(0.,.06,uv.x);if(uPin==5)return smoothstep(0.,.06,1.-uv.x);
+ if(uPin==6)return smoothstep(0.,.06,1.-uv.y);if(uPin==7)return smoothstep(0.,.06,uv.y);return 1.;}
+vec2 disp(vec2 L){vec2 pr=L*uRef,d=vec2(0);float sz=max(uSize,.5);
+ if(uType==0||uType==3||uType>=5){vec2 q=(pr-uOff)/sz+vec2(uSeed*13.37,uSeed*7.1);vec2 f=field(q,uType==3?.35:.5);
+  if(uType==5)d=vec2(f.x,0);else if(uType==6)d=vec2(0,f.y);else if(uType==7)d=vec2(f.x);else d=f;d*=uAmt;}
+ else{vec2 v=pr-uOff;float r=length(v)/sz,k=uType==4?exp(-r*r*.5):max(1.-r,0.);
+  if(uType==1||uType==4)d=-v*k*uAmt/100.;
+  else{float a=radians(uAmt)*k,c=cos(a),s=sin(a);d=vec2(c*v.x-s*v.y,s*v.x+c*v.y)-v;}}
+ return d*pinf(L);}
+vec4 tap(vec2 u){if(any(lessThan(u,vec2(0)))||any(greaterThan(u,vec2(1))))return vec4(0);return texture(uTex,u);}
+void main(){
+ if(uType==100){vec2 t=(vUv-.5)*vec2(uOutW,uOutH)/100.+.5;t=uMirror==1?1.-abs(mod(t,2.)-1.):fract(t);o=texture(uTex,t);return;}
+ vec4 acc=vec4(0);int n=uAA==1?4:1;
+ for(int i=0;i<4;i++){if(i>=n)break;vec2 j=n==1?vec2(0):(vec2(float(i&1),float(i>>1))-.5)*.5/uRef;
+  vec2 L=vUv+j;if(uResize==1)L=(L-.5)*1.2+.5;acc+=tap(L+disp(L)/uRef);}
+ o=acc/float(n);}`;
+function prog(){const mk=(t,s)=>{const h=gl.createShader(t);gl.shaderSource(h,s);gl.compileShader(h);if(!gl.getShaderParameter(h,gl.COMPILE_STATUS))throw gl.getShaderInfoLog(h);return h};
+ const p=gl.createProgram();gl.attachShader(p,mk(gl.VERTEX_SHADER,VS));gl.attachShader(p,mk(gl.FRAGMENT_SHADER,FS));gl.linkProgram(p);return p;}
+const P=prog(),U=n=>gl.getUniformLocation(P,n);gl.useProgram(P);
+const W=cv.width,H=cv.height;
+function tex(){const t=gl.createTexture();gl.bindTexture(gl.TEXTURE_2D,t);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,W,H,0,gl.RGBA,gl.UNSIGNED_BYTE,null);
+ gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MIN_FILTER,gl.LINEAR);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_MAG_FILTER,gl.LINEAR);
+ gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_S,gl.CLAMP_TO_EDGE);gl.texParameteri(gl.TEXTURE_2D,gl.TEXTURE_WRAP_T,gl.CLAMP_TO_EDGE);return t;}
+const srcTex=tex(),rt=[0,1].map(()=>{const t=tex(),f=gl.createFramebuffer();gl.bindFramebuffer(gl.FRAMEBUFFER,f);gl.framebufferTexture2D(gl.FRAMEBUFFER,gl.COLOR_ATTACHMENT0,gl.TEXTURE_2D,t,0);return{t,f};});
+gl.bindFramebuffer(gl.FRAMEBUFFER,null);gl.bindVertexArray(gl.createVertexArray());gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL,true);
+
+
+/* ---------- nguồn hình ---------- */
+const sc=document.createElement('canvas');sc.width=W;sc.height=H;const sx=sc.getContext('2d');
+function drawDemo(){
+ const g=sx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#11172e');g.addColorStop(.55,'#2b1b5a');g.addColorStop(1,'#0e4a63');sx.fillStyle=g;sx.fillRect(0,0,W,H);
+ sx.strokeStyle='rgba(160,200,255,.28)';sx.lineWidth=2;for(let x=0;x<=W;x+=80){sx.beginPath();sx.moveTo(x,0);sx.lineTo(x,H);sx.stroke();}for(let y=0;y<=H;y+=80){sx.beginPath();sx.moveTo(0,y);sx.lineTo(W,y);sx.stroke();}
+ sx.fillStyle='#ffb347';sx.beginPath();sx.arc(W*.78,H*.3,110,0,7);sx.fill();sx.fillStyle='#ff4d6d';sx.fillRect(90,H-170,420,60);sx.fillStyle='#7cf5c8';sx.fillRect(90,H-90,260,30);
+ sx.fillStyle='#fff';sx.textBaseline='middle';sx.font='900 118px "Segoe UI",Arial,sans-serif';sx.fillText('TURBULENT',70,H*.38);sx.font='300 94px "Segoe UI",Arial,sans-serif';sx.fillText('Displace',76,H*.38+112);
+ sx.strokeStyle='#fff';sx.lineWidth=6;sx.strokeRect(24,24,W-48,H-48);}
+function drawCover(el,w,h){sx.fillStyle='#000';sx.fillRect(0,0,W,H);const k=Math.max(W/w,H/h);sx.drawImage(el,(W-w*k)/2,(H-h*k)/2,w*k,h*k);}
+function upload(){gl.bindTexture(gl.TEXTURE_2D,srcTex);gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,sc);}
+
+/* ---------- dữ liệu dự án ---------- */
+let D=8,t=0,playing=true,looping=true,uid=1,sel=null,lastKey=-1,dragging=false,last=performance.now();
+const clips=[{id:uid++,kind:'demo',name:'Cảnh mẫu',start:0,dur:8,off:0}], fxs=[];
+const mkFx=(i,start)=>({id:uid++,name:PRESETS[i].name,start,dur:PRESETS[i].dur,passes:PRESETS[i].passes()});
+fxs.push(mkFx(0,1),mkFx(1,3.6),mkFx(0,6.5));
+const cloneP=ps=>({...ps,p:{...ps.p},kf:JSON.parse(JSON.stringify(ps.kf)),expr:{...ps.expr}});
+const cloneO=(k,o)=>k==='f'?{...o,id:uid++,passes:o.passes.map(cloneP)}:{...o,id:uid++};
+const all=()=>[...clips.map(o=>['c',o]),...fxs.map(o=>['f',o])];
+const arrOf=k=>k==='c'?clips:fxs;
+const grow=e=>{if(e>D){D=Math.ceil(e*2)/2;$('dur').value=D;}};
+
+/* ---------- thêm media ---------- */
+function addFiles(files){[...files].forEach(f=>{const url=URL.createObjectURL(f),st=fr(t);
+ if(f.type.startsWith('video')){const v=document.createElement('video');v.src=url;v.muted=true;v.playsInline=true;v.preload='auto';
+  v.onloadedmetadata=()=>{const c={id:uid++,kind:'vid',name:f.name,el:v,start:st,dur:fr(v.duration),off:0};grow(st+c.dur);clips.push(c);select('c',c);renderTL();};}
+ else if(f.type.startsWith('image')){const i=new Image();i.onload=()=>{const c={id:uid++,kind:'img',name:f.name,el:i,start:st,dur:3,off:0};grow(st+3);clips.push(c);select('c',c);renderTL();};i.src=url;}});}
+$('addMedia').onclick=()=>$('file').click();$('file').onchange=e=>{addFiles(e.target.files);e.target.value='';};
+$('view').ondragover=e=>e.preventDefault();$('view').ondrop=e=>{e.preventDefault();addFiles(e.dataTransfer.files);};
+PRESETS.forEach((p,i)=>$('addFx').add(new Option(p.name,i)));
+$('addFx').onchange=e=>{const v=e.target.value;if(v==='')return;const o=mkFx(+v,fr(Math.min(t,Math.max(0,D-.2))));grow(o.start+o.dur);fxs.push(o);select('f',o);renderTL();e.target.value='';};
+
+/* ---------- thao tác ---------- */
+function dup(){if(!sel)return;const n=clamp(+$('dupN').value||1,1,50);let prev=sel.o,c;
+ for(let i=0;i<n;i++){c=cloneO(sel.k,prev);c.start=fr(prev.start+prev.dur);c.name=sel.o.name.replace(/ \(bản \d+\)$/,'')+' (bản '+(i+2)+')';grow(c.start+c.dur);arrOf(sel.k).push(c);prev=c;}
+ select(sel.k,c);renderTL();}
+function split(){if(!sel)return;const o=sel.o,k=sel.k;if(t<=o.start+.03||t>=o.start+o.dur-.03)return;const sh=t-o.start,b=cloneO(k,o);
+ b.start=t;b.dur=o.start+o.dur-t;o.dur=sh;
+ if(k==='c')b.off=o.off+sh;else b.passes.forEach(ps=>{for(const key in ps.kf)ps.kf[key].forEach(q=>q[0]-=sh*FPS);for(const key in ps.expr){const f=ps.expr[key];ps.expr[key]=x=>f(x+sh);}});
+ arrOf(k).push(b);select(k,b);renderTL();}
+function del(){if(!sel)return;const a=arrOf(sel.k);a.splice(a.indexOf(sel.o),1);sel=null;renderTL();buildInsp();}
+$('bDup').onclick=dup;$('bSplit').onclick=split;$('bDel').onclick=del;
+addEventListener('keydown',e=>{if(/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)&&document.activeElement.type!=='range'&&document.activeElement.type!=='checkbox')return;
+ if(e.code==='Space'){e.preventDefault();$('play').click();}else if(e.key==='Delete'||e.key==='Backspace')del();else if(e.key==='d'||e.key==='D')dup();else if(e.key==='s'||e.key==='S')split();});
+
+/* ---------- timeline ---------- */
+const rows=$('rows'),ruler=$('ruler'),ph=document.createElement('div');ph.className='phl';
+function layout(el,o){el.style.left=o.start/D*100+'%';el.style.width=Math.max(o.dur/D*100,.4)+'%';}
+function select(k,o){sel={k,o};rows.querySelectorAll('.blk').forEach(b=>b.classList.toggle('sel',b._o===o));buildInsp();}
+function renderTL(){lastKey=-1;rows.innerHTML='';
+ const step=D<=12?1:D<=40?5:10;ruler.innerHTML='';for(let s=0;s<=D;s+=step){const i=document.createElement('i');i.style.left=s/D*100+'%';i.textContent=s+'s';ruler.append(i);}
+ all().forEach(([k,o])=>{const row=document.createElement('div');row.className='trow';row.innerHTML=`<div class="lbl" title="${esc(o.name)}">${k==='c'?'Clip':'fx'} · ${esc(o.name)}</div>`;
+  const lane=document.createElement('div');lane.className='lane';const b=document.createElement('div');b.className='blk '+k+(sel&&sel.o===o?' sel':'');b._o=o;b.textContent=o.name;layout(b,o);b.onpointerdown=e=>startDrag(e,k,o,b);lane.append(b);row.append(lane);rows.append(row);});
+ if(!all().length)rows.innerHTML='<div class="empty">Chưa có gì. Bấm “＋ Video / Ảnh” để bắt đầu.</div>';
+ rows.append(ph);}
+function startDrag(e,k,o,el){if(!sel||sel.o!==o)select(k,o);dragging=true;const r=el.getBoundingClientRect(),laneW=el.parentElement.getBoundingClientRect().width,x0=e.clientX,s0=o.start,d0=o.dur,f0=o.off;
+ const rel=e.clientX-r.left,m=rel<8?'l':rel>r.width-8?'r':'m',maxMedia=o.kind==='vid'?o.el.duration:Infinity;el.setPointerCapture(e.pointerId);
+ el.onpointermove=ev=>{const dt=(ev.clientX-x0)/laneW*D;
+  if(m==='m')o.start=fr(clamp(s0+dt,0,Math.max(0,D-o.dur)));
+  else if(m==='l'){let ns=fr(clamp(s0+dt,0,s0+d0-.1));if(o.kind==='vid'||o.kind==='img')ns=Math.max(ns,s0-f0);o.dur=d0-(ns-s0);o.off=f0+(ns-s0);o.start=ns;}
+  else o.dur=fr(clamp(d0+dt,.1,Math.min(D-o.start,maxMedia-o.off)));
+  layout(el,o);};
+ el.onpointerup=()=>{dragging=false;el.onpointermove=null;};}
+const seekAt=e=>{const r=rows.getBoundingClientRect();t=clamp((e.clientX-r.left-96)/(r.width-96),0,1)*D;};
+ruler.onpointerdown=e=>{dragging=true;ruler.setPointerCapture(e.pointerId);const rr=ruler.getBoundingClientRect();const f=ev=>{t=clamp((ev.clientX-rr.left)/rr.width,0,1)*D;};f(e);ruler.onpointermove=f;ruler.onpointerup=()=>{dragging=false;ruler.onpointermove=null;};};
+rows.onpointerdown=e=>{if(e.target.classList.contains('lane')||e.target===rows){seekAt(e);}};
+
+/* ---------- inspector ---------- */
+const live=[];
+function el(tag,cls,html){const x=document.createElement(tag);if(cls)x.className=cls;if(html!=null)x.innerHTML=html;return x;}
+function numField(label,get,set,step,min){const r=el('div','fld','<label>'+label+'</label>');const n=el('input');n.type='number';n.step=step;n.min=min;n.onchange=()=>{set(+n.value);renderTL();};r.append(n);live.push(()=>{if(document.activeElement!==n)n.value=(+get()).toFixed(2);});return r;}
+function upsert(ps,key,lt,v){const k=ps.kf[key],f=Math.round(lt*FPS);const ex=k.find(q=>Math.abs(q[0]-f)<.5);if(ex)ex[1]=v;else{k.push([f,v,0,.33333,0,.33333]);k.sort((a,b)=>a[0]-b[0]);}}
+function buildInsp(){const box=$('insp');box.innerHTML='';live.length=0;
+ if(!sel){box.append(el('div','empty','Chọn một khối trên timeline để chỉnh sửa.'));return;}
+ const o=sel.o,k=sel.k;
+ const nm=el('div','fld','<label>Tên</label>');const ti=el('input');ti.type='text';ti.value=o.name;ti.oninput=()=>{o.name=ti.value;rows.querySelectorAll('.blk').forEach(b=>{if(b._o===o){b.textContent=o.name;b.parentElement.previousSibling.textContent=(k==='c'?'Clip':'fx')+' · '+o.name;}});};nm.append(ti);box.append(nm);
+ box.append(numField('Bắt đầu (s)',()=>o.start,v=>{o.start=fr(clamp(v,0,D));grow(o.start+o.dur);},.05,0));
+ box.append(numField('Độ dài (s)',()=>o.dur,v=>{o.dur=fr(Math.max(.1,v));grow(o.start+o.dur);},.05,.1));
+ if(k==='c')box.append(numField('Cắt đầu (s)',()=>o.off,v=>{o.off=Math.max(0,v);},.05,0));
+ if(k==='f'){const a=el('div','acts');[['TD','＋ Turbulent Displace',()=>TD({})],['MT','＋ Motion Tile',()=>TILE()]].forEach(([,l,f])=>{const b=el('button',null,l);b.onclick=()=>{o.passes.push(f());buildInsp();};a.append(b);});box.append(a);
+  o.passes.forEach(ps=>box.append(passUI(o,ps)));
+  if(!o.passes.length)box.append(el('div','empty','Lớp này chưa có hiệu ứng.'));}
+ else box.append(el('div','kbd',o.kind==='demo'?'Cảnh mẫu dựng bằng canvas.':'Clip: '+esc(o.name)));
+}
+function passUI(L,ps){const w=el('div','pass');const h=el('div','ph','<span class="fxi">fx</span>'+ps.name+'<span class="sp"></span>');const x=el('button',null,'✕');x.title='Xoá hiệu ứng';x.onclick=()=>{L.passes.splice(L.passes.indexOf(ps),1);buildInsp();};h.append(x);w.append(h);
+ const lt=()=>clamp(t-L.start,0,L.dur);
+ (ps.kind==='td'?SCHEMA:TILES).forEach(([key,label,type,a,b,step,unit])=>{
+  const row=el('div','row'+(type==='grp'?' grp':''),'<label>'+label+'</label>');const v=el('div','val');
+  if(type==='sel'){const s=el('select');a.forEach((n,i)=>s.add(new Option(n,i)));s.value=ps.p[key];s.onchange=()=>ps.p[key]=+s.value;v.append(s);}
+  else if(type==='chk'){const c=el('input');c.type='checkbox';c.checked=!!ps.p[key];c.onchange=()=>ps.p[key]=c.checked?1:0;v.append(c);}
+  else if(type==='num'){const r=el('input');r.type='range';r.min=a;r.max=b;r.step=step;const n=el('input','num');n.type='number';n.step=step;
+   const set=val=>{if(ps.kf[key])upsert(ps,key,lt(),val);else{if(ps.expr[key]){delete ps.expr[key];buildInsp();}ps.p[key]=val;}};
+   r.oninput=()=>{n.value=r.value;set(+r.value);};n.onchange=()=>{r.value=n.value;set(+n.value);};v.append(r,n);if(unit)v.append(el('span',null,unit));
+   if(ps.kind==='td'){const sw=el('button','sw2'+(ps.kf[key]?' on':''),'◆');sw.title='Keyframe: bấm để bật/tắt hoạt ảnh. Khi đã bật, kéo thanh trượt ở đầu phát bất kỳ sẽ thêm keyframe.';
+    sw.onclick=()=>{if(ps.kf[key]){ps.p[key]=valueOf(ps,key,lt());delete ps.kf[key];}else{ps.kf[key]=[[Math.round(lt()*FPS),valueOf(ps,key,lt()),0,.33333,0,.33333]];delete ps.expr[key];}buildInsp();};v.append(sw);
+    if(key==='evo'){const fx=el('button','sw2'+(ps.expr[key]?' on':''),'ƒx');fx.title='Expression: Evolution = time × hệ số';fx.onclick=()=>{if(ps.expr[key]){ps.p[key]=valueOf(ps,key,lt());delete ps.expr[key];}else{const m=parseFloat(prompt('Evolution = time × ?',300));if(isNaN(m))return;ps.expr[key]=x=>x*m;delete ps.kf[key];}buildInsp();};v.append(fx);}
+    if(ps.kf[key]){n.classList.add('kf');v.append(el('span','badge','◆ '+ps.kf[key].length+' khung'));}else if(ps.expr[key]){n.classList.add('kf');v.append(el('span','badge','ƒx'));}}
+   live.push(()=>{const val=valueOf(ps,key,lt());if(ps.kf[key]||ps.expr[key]||document.activeElement!==n){n.value=+val.toFixed(2);if(document.activeElement!==r)r.value=val;}});}
+  row.append(v);w.append(row);});
+ return w;}
+
+/* ---------- vẽ ---------- */
+function setU(ps,tm){
+ gl.uniform2f(U('uRef'),REF[0],REF[1]);
+ if(ps.kind==='tile'){gl.uniform1i(U('uType'),100);gl.uniform1f(U('uOutW'),ps.p.outW);gl.uniform1f(U('uOutH'),ps.p.outH);gl.uniform1i(U('uMirror'),ps.p.mirror);return;}
+ const g=k=>valueOf(ps,k,tm);
+ gl.uniform1i(U('uType'),ps.p.type);gl.uniform1f(U('uAmt'),Math.max(0,g('amount')));gl.uniform1f(U('uSize'),Math.max(.5,g('size')));
+ gl.uniform2f(U('uOff'),g('offx'),g('offy'));gl.uniform1f(U('uCx'),g('cx'));gl.uniform1f(U('uEvo'),g('evo'));gl.uniform1i(U('uCycleOn'),ps.p.cycleOn);
+ gl.uniform1f(U('uCyc'),Math.max(1,g('cyc')));gl.uniform1f(U('uSeed'),g('seed'));gl.uniform1i(U('uPin'),ps.p.pin);gl.uniform1i(U('uResize'),ps.p.resize);gl.uniform1i(U('uAA'),ps.p.aa);
+}
+function syncVideo(c,tm){const v=c.el,want=c.off+(tm-c.start);
+ if(playing&&!dragging){if(v.paused)v.play().catch(()=>{});if(Math.abs(v.currentTime-want)>.3)v.currentTime=Math.min(want,v.duration-.01);}
+ else{if(!v.paused)v.pause();if(Math.abs(v.currentTime-want)>.02)v.currentTime=clamp(want,0,v.duration);}}
+function frameSource(tm){let c=null;for(const x of clips)if(tm>=x.start&&tm<x.start+x.dur)c=x;
+ clips.forEach(x=>{if(x.kind==='vid'&&x!==c&&!x.el.paused)x.el.pause();});
+ if(!c){if(lastKey!==0){sx.fillStyle='#000';sx.fillRect(0,0,W,H);upload();lastKey=0;}return;}
+ if(c.kind==='vid'){syncVideo(c,tm);if(c.el.readyState>=2){drawCover(c.el,c.el.videoWidth,c.el.videoHeight);upload();}lastKey=c.id;}
+ else if(lastKey!==c.id){if(c.kind==='demo')drawDemo();else drawCover(c.el,c.el.naturalWidth,c.el.naturalHeight);upload();lastKey=c.id;}}
+function render(tm){frameSource(tm);
+ const list=[];fxs.forEach(L=>{if(tm>=L.start&&tm<L.start+L.dur)L.passes.forEach(ps=>list.push([ps,tm-L.start]));});
+ if(!list.length)list.push([TILE({outW:100,outH:100,mirror:0}),0]);
+ let input=srcTex;gl.viewport(0,0,W,H);
+ list.forEach(([ps,lt],i)=>{const lastP=i===list.length-1;gl.bindFramebuffer(gl.FRAMEBUFFER,lastP?null:rt[i%2].f);
+  gl.bindTexture(gl.TEXTURE_2D,input);gl.uniform1i(U('uTex'),0);setU(ps,lt);gl.clearColor(0,0,0,0);gl.clear(gl.COLOR_BUFFER_BIT);gl.drawArrays(gl.TRIANGLES,0,3);input=rt[i%2].t;});}
+$('play').onclick=function(){playing=!playing;this.classList.toggle('on',playing);this.textContent=playing?'❚❚ Tạm dừng':'▶ Phát';};
+$('loop').onclick=function(){looping=!looping;this.classList.toggle('on',looping);};
+$('dur').value=D;$('dur').onchange=e=>{D=clamp(+e.target.value||8,1,600);renderTL();};
+$('rec').onclick=function(){if(!window.MediaRecorder)return alert('Trình duyệt chưa hỗ trợ ghi video.');const rec=new MediaRecorder(cv.captureStream(FPS),{mimeType:'video/webm'}),ch=[];
+ rec.ondataavailable=e=>ch.push(e.data);rec.onstop=()=>{const a=el('a');a.href=URL.createObjectURL(new Blob(ch,{type:'video/webm'}));a.download='turbulent-displace.webm';a.click();this.textContent='● Xuất WebM';};
+ t=0;playing=true;$('play').classList.add('on');$('play').textContent='❚❚ Tạm dừng';rec.start();this.textContent='Đang ghi…';setTimeout(()=>rec.stop(),D*1000+150);};
+function frame(now){const dt=Math.min((now-last)/1000,.1);last=now;
+ if(playing&&!dragging){t+=dt;if(t>=D){if(looping)t%=D;else{t=D-.001;playing=false;$('play').classList.remove('on');$('play').textContent='▶ Phát';}}}
+ render(t);live.forEach(f=>f());
+ ph.style.left=`calc(96px + (100% - 96px) * ${t/D})`;$('tinfo').textContent=`${t.toFixed(2)}s · khung ${Math.round(t*FPS)} @${FPS}fps`;requestAnimationFrame(frame);}
+renderTL();select('f',fxs[0]);requestAnimationFrame(frame);
+</script>
+</body>
+</html>
